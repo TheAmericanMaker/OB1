@@ -26,7 +26,9 @@
  *   GET  /entities/:id        — entity detail with thoughts and edges
  *   GET  /health              — health check
  *
- * Auth: ?key= query param, x-brain-key header, or Authorization: Bearer <key>
+ * Auth: x-brain-key header or Authorization: Bearer <key>.
+ * Header-only by design — the key is never read from the URL query string,
+ * which would leak it into CDN/proxy/Supabase access logs.
  *
  * Dependencies:
  *   - Enhanced thoughts schema (schemas/enhanced-thoughts)
@@ -158,10 +160,8 @@ async function checkRateLimit(key: string, req: Request): Promise<Response | nul
 
 /** Extract the presented key for rate-limit bucketing. Caller must pass only authenticated keys. */
 function presentedKey(req: Request): string {
-  const url = new URL(req.url);
   return (
     req.headers.get("x-brain-key")?.trim() ||
-    url.searchParams.get("key")?.trim() ||
     (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim()
   );
 }
@@ -185,10 +185,8 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 function isAuthorized(req: Request): boolean {
-  const url = new URL(req.url);
   const key =
     req.headers.get("x-brain-key")?.trim() ||
-    url.searchParams.get("key")?.trim() ||
     (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
   if (!key) return false;
   return timingSafeEqual(key, MCP_ACCESS_KEY.trim());

@@ -63,7 +63,8 @@ supabase secrets set \
 ### 3. Test the Health Endpoint
 
 ```bash
-curl "https://<your-project-ref>.supabase.co/functions/v1/rest-api/health?key=your-access-key"
+curl "https://<your-project-ref>.supabase.co/functions/v1/rest-api/health" \
+  -H "x-brain-key: your-access-key"
 ```
 
 Expected response:
@@ -93,9 +94,12 @@ curl -X POST "https://<your-project-ref>.supabase.co/functions/v1/rest-api/captu
 ## Authentication
 
 All requests require authentication via one of:
-- Query parameter: `?key=your-access-key`
 - Header: `x-brain-key: your-access-key`
 - Header: `Authorization: Bearer your-access-key`
+
+The key is accepted **only** via headers, never as a `?key=` query parameter —
+URL query strings leak into CDN/proxy/Supabase access logs, which would expose
+the credential in places that aren't rotated with the secret.
 
 Key comparison uses constant-time byte-wise equality to prevent
 timing-based key discovery.
